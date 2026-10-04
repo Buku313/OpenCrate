@@ -10,6 +10,12 @@ const root=dirname(fileURLToPath(import.meta.url));
 const data=resolve(process.env.OPENCRATE_DATA||join(root,'data'));
 const output=join(data,'downloads');await mkdir(output,{recursive:true});
 const port=Number(process.env.PORT||4783), origin=`http://127.0.0.1:${port}`;
+const publicOrigin=process.env.PUBLIC_ORIGIN?new URL(process.env.PUBLIC_ORIGIN).origin:'';
+const publicHost=publicOrigin?new URL(publicOrigin).host:'';
+if(publicOrigin&&new URL(publicOrigin).protocol!=='https:')throw Error('PUBLIC_ORIGIN must use HTTPS.');
+const allowedHosts=new Set([`127.0.0.1:${port}`,`localhost:${port}`,publicHost].filter(Boolean));
+const allowedOrigins=new Set([origin,`http://localhost:${port}`,publicOrigin].filter(Boolean));
+const bindAddress=process.env.OPENCRATE_BIND||'127.0.0.1';
 const ytdlp=process.env.YTDLP_BIN||'yt-dlp';
 const localPython=join(root,'.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python');
 const python=process.env.PYTHON_BIN||(existsSync(localPython)?localPython:'python3');
@@ -68,8 +74,8 @@ async function importSpotify(input,token){
 const server=http.createServer(async(req,res)=>{
  const json=(s,v)=>{res.writeHead(s,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(v));};
  try{
-  if(![`127.0.0.1:${port}`,`localhost:${port}`].includes(req.headers.host))return json(403,{error:'Invalid host'});
-  if(req.headers.origin&&! [origin,`http://localhost:${port}`].includes(req.headers.origin))return json(403,{error:'Invalid origin'});
+  if(!allowedHosts.has(req.headers.host))return json(403,{error:'Invalid host'});
+  if(req.headers.origin&&!allowedOrigins.has(req.headers.origin))return json(403,{error:'Invalid origin'});
   const url=new URL(req.url,origin),p=url.pathname;
   if(req.method==='GET'&&p==='/api/status'){
    return json(200,{jobs,data,dependencies:await dependencies()});
@@ -124,5 +130,5 @@ const server=http.createServer(async(req,res)=>{
   if(req.method==='GET'&&['/','/app.js','/style.css'].includes(p)){const file=p==='/'?'index.html':p.slice(1);res.writeHead(200,{'Content-Type':file.endsWith('html')?'text/html':file.endsWith('css')?'text/css':'text/javascript','Content-Security-Policy':"default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"});return res.end(await readFile(join(root,'public',file)));}
   return json(404,{error:'Not found'});
  }catch(e){return json(400,{error:e.message});}
-});server.listen(port,'127.0.0.1',()=>{console.log(`OpenCrate → ${origin}\nDownloads → ${output}`);void queue();});
+});server.listen(port,bindAddress,()=>{console.log(`OpenCrate → ${publicOrigin||origin}\nDownloads → ${output}`);void queue();});
 server.on('error',e=>{console.error(e.code==='EADDRINUSE'?'OpenCrate is already running on this port.':e.message);process.exitCode=1;});

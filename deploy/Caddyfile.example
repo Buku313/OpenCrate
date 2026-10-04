@@ -1,0 +1,8 @@
+# Add this site block to the existing Caddyfile after replacing the host and hash.
+opencrate.example.com {
+	encode zstd gzip
+	basic_auth {
+		djfriends REPLACE_WITH_CADDY_HASH_PASSWORD_OUTPUT
+	}
+	reverse_proxy opencrate:4783
+}

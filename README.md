@@ -89,6 +89,10 @@ OpenCrate prefers original cover art where available, then source thumbnails and
 | `PORT` | Local web server port (default `4783`) |
 | `SPOTIFY_ACCESS_TOKEN` | Optional Spotify API token |
 
+## Share OpenCrate with a group
+
+OpenCrate is designed for one local user by default. To let a small trusted group use one shared library, deploy it behind an HTTPS reverse proxy with authentication. The container does not expose a public port; the [Caddy deployment guide](deploy/README.md) reuses an existing Caddy Docker host and protects the UI and API with a shared password. Everyone with the password can use the shared download queue and disk space.
+
 ## License
 
 OpenCrate is available under the MIT License. See [LICENSE](LICENSE).

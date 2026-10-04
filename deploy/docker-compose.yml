@@ -1,0 +1,20 @@
+services:
+  opencrate:
+    build:
+      context: ..
+    container_name: opencrate
+    restart: unless-stopped
+    environment:
+      PUBLIC_ORIGIN: ${OPENCRATE_PUBLIC_ORIGIN:?Set OPENCRATE_PUBLIC_ORIGIN in .env}
+    volumes:
+      - opencrate-data:/data
+    networks:
+      - proxy
+
+volumes:
+  opencrate-data:
+
+networks:
+  proxy:
+    external: true
+    name: ${CADDY_DOCKER_NETWORK:?Set CADDY_DOCKER_NETWORK in .env}
